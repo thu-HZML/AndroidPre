@@ -543,11 +543,13 @@ fun ElasticCardDemo() {
                     detectDragGestures(
                         onDragStart = { },
                         onDragEnd = {
+                            val springSpec = spring<Float>(
+                                dampingRatio = Spring.DampingRatioMediumBouncy,
+                                stiffness = Spring.StiffnessMedium
+                            )
+
+                            // 【关键修改】分别启动两个协程，让 X 和 Y 同时执行动画
                             scope.launch {
-                                val springSpec = spring<Float>(
-                                    dampingRatio = Spring.DampingRatioMediumBouncy,
-                                    stiffness = Spring.StiffnessMedium
-                                )
                                 animate(
                                     initialValue = offsetX,
                                     targetValue = 0f,
@@ -555,6 +557,9 @@ fun ElasticCardDemo() {
                                 ) { value, _ ->
                                     offsetX = value
                                 }
+                            }
+
+                            scope.launch {
                                 animate(
                                     initialValue = offsetY,
                                     targetValue = 0f,
@@ -571,14 +576,14 @@ fun ElasticCardDemo() {
                         }
                     )
                 },
-            backgroundColor = cardColor  // 关键修改：应用动画颜色
+            backgroundColor = cardColor
         ) {
             Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "拖拽我！\n松开后弹性回弹",
+                    text = "拖拽\n松开后弹性回弹",
                     color = Color.Black,
                     style = MaterialTheme.typography.h6
                 )
@@ -592,7 +597,6 @@ fun ElasticCardDemo() {
         textAlign = TextAlign.Center
     )
 }
-
 // 自定义配色方案
 private val LightColorPalette = lightColors(
     primary = Color(0xFF6200EE),
