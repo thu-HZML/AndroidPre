@@ -440,22 +440,35 @@ fun TwoDScrollDemo() {
 fun AnimationDemo() {
     var expanded by remember { mutableStateOf(false) }
 
+    // 1. 高度动画：收起时 60dp，展开时 200dp。加上了 spring（弹性）效果让变化更生动
     val height by animateDpAsState(
-        targetValue = if (expanded) 200.dp else 0.dp,
-        animationSpec = tween(durationMillis = 500, easing = FastOutSlowInEasing),
+        targetValue = if (expanded) 200.dp else 60.dp,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        ),
         label = "height"
     )
 
+    // 2. 颜色动画：收起时蓝色，展开时粉红色
     val backgroundColor by animateColorAsState(
         targetValue = if (expanded) Color(0xFFE91E63) else Color(0xFF2196F3),
         animationSpec = tween(durationMillis = 500),
         label = "color"
     )
 
+    // 3. (新增) 圆角动画：收起时全圆角，展开时小圆角，增强视觉反馈
+    val cornerRadius by animateDpAsState(
+        targetValue = if (expanded) 8.dp else 30.dp,
+        animationSpec = tween(durationMillis = 500),
+        label = "cornerRadius"
+    )
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp)
+            .padding(vertical = 8.dp),
+        elevation = 4.dp
     ) {
         Column(
             modifier = Modifier.padding(16.dp)
@@ -466,7 +479,7 @@ fun AnimationDemo() {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "复杂动画演示",
+                    text = "动画演示",
                     style = MaterialTheme.typography.subtitle1,
                     color = MaterialTheme.colors.primary
                 )
@@ -475,32 +488,34 @@ fun AnimationDemo() {
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
-            AnimatedVisibility(
-                visible = expanded,
-                enter = fadeIn() + slideInVertically(),
-                exit = fadeOut() + slideOutVertically()
+            // 去掉了 AnimatedVisibility，直接用 Box 承载所有动画状态
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(height) // 应用高度动画
+                    .background(
+                        color = backgroundColor, // 应用颜色动画
+                        shape = androidx.compose.foundation.shape.RoundedCornerShape(cornerRadius) // 应用圆角动画
+                    )
+                    // 加上 clickable，让用户点击色块本身也能触发动画，体验更好
+                    .clickable { expanded = !expanded }
+                    .padding(16.dp),
+                contentAlignment = Alignment.Center
             ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(height)
-                        .animateContentSize()
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(backgroundColor)
-                            .padding(8.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "✨ 动画区域 ✨\n高度和颜色都在变化",
-                            color = Color.White,
-                            style = MaterialTheme.typography.body1
-                        )
-                    }
+                // 文字也添加交叉淡入淡出的动画
+                Crossfade(
+                    targetState = expanded,
+                    animationSpec = tween(500),
+                    label = "text"
+                ) { isExpanded ->
+                    Text(
+                        text = if (isExpanded) " 展开状态高度: 200dp\n颜色: 粉色" else "点我展开 (蓝色)",
+                        color = Color.White,
+                        style = MaterialTheme.typography.body1,
+                        textAlign = TextAlign.Center
+                    )
                 }
             }
         }
