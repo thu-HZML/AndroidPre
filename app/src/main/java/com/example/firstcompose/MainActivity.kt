@@ -230,6 +230,24 @@ fun ElasticCardScreen(onBack: () -> Unit) {
 fun TodoListScreen(onBack: () -> Unit) {
     var tasks by remember { mutableStateOf(listOf<Task>()) }
     var text by remember { mutableStateOf("") }
+    val onAdd: () -> Unit = {
+        if (text.isNotBlank()) {
+            tasks = tasks + Task(
+                id = (tasks.maxOfOrNull { it.id } ?: 0) + 1,
+                title = text.trim(),
+                isCompleted = false
+            )
+            text = ""
+        }
+    }
+    val onToggle: (Int, Boolean) -> Unit = { id, checked ->
+        tasks = tasks.map { task ->
+            if (task.id == id) task.copy(isCompleted = checked) else task
+        }
+    }
+    val onDelete: (Int) -> Unit = { id ->
+        tasks = tasks.filter { task -> task.id != id }
+    }
 
     Scaffold(
         topBar = {
@@ -246,56 +264,20 @@ fun TodoListScreen(onBack: () -> Unit) {
                 .padding(paddingValues)
                 .padding(16.dp)
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                TextField(
-                    value = text,
-                    onValueChange = { text = it },
-                    label = { Text("新任务") },
-                    modifier = Modifier.weight(1f)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Button(
-                    onClick = {
-                        if (text.isNotBlank()) {
-                            tasks = tasks + Task(
-                                id = tasks.size + 1,
-                                title = text,
-                                isCompleted = false
-                            )
-                            text = ""
-                        }
-                    },
-                    enabled = text.isNotBlank()
-                ) {
-                    Icon(Icons.Default.Add, contentDescription = "添加")
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text("添加")
-                }
-            }
+            TaskInputBar(
+                text = text,
+                onTextChange = { text = it },
+                onAdd = onAdd,
+                enabled = text.isNotBlank()
+            )
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                items(tasks) { task ->
-                    TaskItem(
-                        task = task,
-                        onCheckboxChange = { isChecked ->
-                            tasks = tasks.map {
-                                if (it.id == task.id) it.copy(isCompleted = isChecked)
-                                else it
-                            }
-                        },
-                        onDelete = {
-                            tasks = tasks.filter { it.id != task.id }
-                        }
-                    )
-                }
-            }
+            TaskList(
+                tasks = tasks,
+                onToggle = onToggle,
+                onDelete = onDelete
+            )
         }
     }
 }
@@ -311,8 +293,8 @@ data class Task(
 @Composable
 fun TaskItem(
     task: Task,
-    onCheckboxChange: (Boolean) -> Unit,
-    onDelete: () -> Unit
+    onToggle: (id: Int, checked: Boolean) -> Unit,
+    onDelete: (id: Int) -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -326,7 +308,7 @@ fun TaskItem(
         ) {
             Checkbox(
                 checked = task.isCompleted,
-                onCheckedChange = onCheckboxChange
+                onCheckedChange = { checked -> onToggle(task.id, checked) }
             )
             Spacer(modifier = Modifier.width(8.dp))
             Text(
@@ -334,13 +316,64 @@ fun TaskItem(
                 style = MaterialTheme.typography.body1,
                 modifier = Modifier.weight(1f)
             )
-            IconButton(onClick = onDelete) {
+            IconButton(onClick = { onDelete(task.id) }) {
                 Icon(Icons.Default.Delete, contentDescription = "删除")
             }
         }
     }
 }
 
+
+@Composable
+fun TaskInputBar(
+    text: String,
+    onTextChange: (String) -> Unit,
+    onAdd: () -> Unit,
+    enabled: Boolean
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        TextField(
+            value = text,
+            onValueChange = onTextChange,
+            label = { Text("New Task") },
+            modifier = Modifier.weight(1f)
+        )
+        Spacer(modifier = Modifier.width(8.dp))
+        Button(
+            onClick = onAdd,
+            enabled = enabled
+        ) {
+            Icon(Icons.Default.Add, contentDescription = "Add")
+            Spacer(modifier = Modifier.width(4.dp))
+            Text("Add")
+        }
+    }
+}
+
+@Composable
+fun TaskList(
+    tasks: List<Task>,
+    onToggle: (Int, Boolean) -> Unit,
+    onDelete: (Int) -> Unit
+) {
+    LazyColumn(
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        items(
+            items = tasks,
+            key = { it.id }
+        ) { task ->
+            TaskItem(
+                task = task,
+                onToggle = onToggle,
+                onDelete = onDelete
+            )
+        }
+    }
+}
 @Composable
 fun CounterDemo() {
     var count by remember { mutableStateOf(0) }
