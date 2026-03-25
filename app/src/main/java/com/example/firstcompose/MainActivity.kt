@@ -4,17 +4,74 @@ import android.content.res.Configuration
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.animation.*
-import androidx.compose.animation.core.*
-import androidx.compose.foundation.*
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animate
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.BottomNavigation
+import androidx.compose.material.BottomNavigationItem
+import androidx.compose.material.Button
+import androidx.compose.material.ButtonDefaults
+import androidx.compose.material.Card
+import androidx.compose.material.Checkbox
+import androidx.compose.material.CheckboxDefaults
+import androidx.compose.material.Icon
+import androidx.compose.material.IconButton
+import androidx.compose.material.MaterialTheme
+import androidx.compose.material.OutlinedTextField
+import androidx.compose.material.Scaffold
+import androidx.compose.material.Text
+import androidx.compose.material.TextFieldDefaults
+import androidx.compose.material.TopAppBar
+import androidx.compose.material.darkColors
+import androidx.compose.material.lightColors
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -26,17 +83,17 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.Devices
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
 
-// ---------- 底部导航架构 ----------
-sealed class UniTab(val route: String, val title: String, val icon: ImageVector) {
-    object Home : UniTab("home", "今日校园", Icons.Default.Home)
-    object Schedule : UniTab("schedule", "课表矩阵", Icons.Default.DateRange)
-    object DDL : UniTab("ddl", "DDL追踪", Icons.Default.Notifications)
+sealed class UniTab(val title: String, val icon: ImageVector) {
+    object Home : UniTab("今日校园", Icons.Default.Home)
+    object Schedule : UniTab("课表矩阵", Icons.Default.DateRange)
+    object Ddl : UniTab("DDL 追踪", Icons.Default.Notifications)
+    object Compare : UniTab("资源广场", Icons.Default.Star)
 }
 
 class MainActivity : ComponentActivity() {
@@ -53,13 +110,21 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun UniHubApp() {
     var currentTab by remember { mutableStateOf<UniTab>(UniTab.Home) }
-    val tabs = listOf(UniTab.Home, UniTab.Schedule, UniTab.DDL)
+    val tabs = listOf(UniTab.Home, UniTab.Schedule, UniTab.Ddl, UniTab.Compare)
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {
-                    Text("UniHub 校园空间", fontWeight = FontWeight.Bold)
+                    Text(
+                        text = when (currentTab) {
+                            UniTab.Home -> "UniHub 校园空间"
+                            UniTab.Schedule -> "本学期专属课表"
+                            UniTab.Ddl -> "DDL 危机化解中心"
+                            UniTab.Compare -> "校园资源广场"
+                        },
+                        fontWeight = FontWeight.Bold
+                    )
                 },
                 backgroundColor = MaterialTheme.colors.surface,
                 contentColor = MaterialTheme.colors.primary,
@@ -88,18 +153,28 @@ fun UniHubApp() {
             modifier = Modifier
                 .padding(paddingValues)
                 .fillMaxSize()
-                .background(Color(0xFFF4F7FB)) // 清新的淡蓝色背景
+                .background(Color(0xFFF4F7FB))
         ) {
             when (currentTab) {
                 UniTab.Home -> HomeScreen()
                 UniTab.Schedule -> CourseMatrixScreen()
-                UniTab.DDL -> DDLTrackerScreen()
+                UniTab.Ddl -> DdlTrackerScreen()
+                UniTab.Compare -> ListCompareContent(modifier = Modifier.fillMaxSize())
             }
         }
     }
 }
 
-// ---------- 1. 首页 (番茄钟、下节课动画、解压悬浮球) ----------
+@Composable
+fun BackButton(onBack: () -> Unit) {
+    IconButton(onClick = onBack) {
+        Icon(
+            imageVector = Icons.Default.ArrowBack,
+            contentDescription = "返回"
+        )
+    }
+}
+
 @Composable
 fun HomeScreen() {
     Column(
@@ -109,112 +184,146 @@ fun HomeScreen() {
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // 顶部问候语
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // 左侧：原 CounterDemo (包装为自习番茄钟)
             Box(modifier = Modifier.weight(1f)) {
                 PomodoroCounter()
             }
-            // 右侧：学习状态展示
             Card(
-                modifier = Modifier.weight(1f).height(120.dp),
+                modifier = Modifier
+                    .weight(1f)
+                    .height(120.dp),
                 shape = MaterialTheme.shapes.large,
                 elevation = 0.dp
             ) {
                 Column(
-                    modifier = Modifier.padding(16.dp).fillMaxSize(),
+                    modifier = Modifier
+                        .padding(16.dp)
+                        .fillMaxSize(),
                     verticalArrangement = Arrangement.Center,
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Icon(Icons.Default.Star, contentDescription = null, tint = Color(0xFFFFC107), modifier = Modifier.size(32.dp))
+                    Icon(
+                        imageVector = Icons.Default.Star,
+                        contentDescription = null,
+                        tint = Color(0xFFFFC107),
+                        modifier = Modifier.size(32.dp)
+                    )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text("本周超越了", fontSize = 12.sp, color = Color.Gray)
-                    Text("85% 同学", fontWeight = FontWeight.ExtraBold, fontSize = 16.sp, color = MaterialTheme.colors.primary)
+                    Text(
+                        "85% 同学",
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 16.sp,
+                        color = MaterialTheme.colors.primary
+                    )
                 }
             }
         }
 
-        Text("提醒：下一节课", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color.DarkGray, modifier = Modifier.padding(top = 8.dp))
-        // 原 AnimationDemo：包装为可展开的课程详细信息卡片
+        Text(
+            text = "提醒：下一节课",
+            fontWeight = FontWeight.Bold,
+            fontSize = 16.sp,
+            color = Color.DarkGray,
+            modifier = Modifier.padding(top = 8.dp)
+        )
         ExpandableCourseCard()
 
-        Text("专注悬浮球 (互动体验)", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color.DarkGray, modifier = Modifier.padding(top = 8.dp))
-        // 原 ElasticCardDemo：包装为屏幕悬浮小组件
+        Text(
+            text = "专注悬浮球（互动体验）",
+            fontWeight = FontWeight.Bold,
+            fontSize = 16.sp,
+            color = Color.DarkGray,
+            modifier = Modifier.padding(top = 8.dp)
+        )
         InteractiveFocusWidget()
     }
 }
 
-// ---------- 2. 课表矩阵 (原 二维滚动 演示) ----------
-// ---------- 2. 课表矩阵 (原 二维滚动 演示) ----------
 @Composable
 fun CourseMatrixScreen() {
-    Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        Text("本学期专属课表", fontWeight = FontWeight.Bold, fontSize = 20.sp, color = Color(0xFF2C3E50))
-        Text("👉 特性展示：上下滑动查看全天排课，左右滑动查看全周", fontSize = 13.sp, color = Color.Gray, modifier = Modifier.padding(top = 4.dp, bottom = 16.dp))
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+    ) {
+        Text(
+            text = "本学期专属课表",
+            fontWeight = FontWeight.Bold,
+            fontSize = 20.sp,
+            color = Color(0xFF2C3E50)
+        )
+        Text(
+            text = "上下滑动查看全天排课，左右滑动查看全周",
+            fontSize = 13.sp,
+            color = Color.Gray,
+            modifier = Modifier.padding(top = 4.dp, bottom = 16.dp)
+        )
 
         Card(
-            modifier = Modifier.fillMaxSize().shadow(8.dp, shape = MaterialTheme.shapes.large),
+            modifier = Modifier
+                .fillMaxSize()
+                .shadow(8.dp, shape = MaterialTheme.shapes.large),
             elevation = 0.dp
         ) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .verticalScroll(rememberScrollState())   // 纵向滚动（看第1到第12节）
-                    .horizontalScroll(rememberScrollState()) // 横向滚动（看周一到周日）
+                    .verticalScroll(rememberScrollState())
+                    .horizontalScroll(rememberScrollState())
                     .background(Color.White)
             ) {
                 Column {
                     val days = listOf("时间", "周一", "周二", "周三", "周四", "周五", "周六", "周日")
-
-                    // 13行：1行表头 + 12节课
                     repeat(13) { row ->
                         Row {
-                            // 8列：1列表头 + 7天
                             repeat(8) { col ->
                                 val isHeader = row == 0 || col == 0
-
-                                // 解析当前格子的课程信息
                                 var courseName = ""
                                 var room = ""
                                 var isCourse = false
 
                                 if (!isHeader) {
-                                    if (col == 1 && row == 3) {
-                                        courseName = "移动应用\n软件开发"
-                                        room = "旧经管报告厅"
-                                        isCourse = true
-                                    } else if (col == 3 && row == 1) {
-                                        courseName = "移动应用\n软件开发"
-                                        room = "旧经管报告厅"
-                                        isCourse = true
-                                    } else if (col == 3 && row == 2) {
-                                        courseName = "数据库原理"
-                                        room = "五教5202"
-                                        isCourse = true
-                                    } else if (col == 4 && row == 2) {
-                                        courseName = "嵌入式开发"
-                                        room = "三教1103"
-                                        isCourse = true
-                                    } else if (col == 4 && row == 4) {
-                                        courseName = "体育"
-                                        room = "北体育馆"
-                                        isCourse = true
+                                    when {
+                                        col == 1 && row == 3 -> {
+                                            courseName = "移动应用\n软件开发"
+                                            room = "计算机大楼 302"
+                                            isCourse = true
+                                        }
+                                        col == 3 && row == 1 -> {
+                                            courseName = "移动应用\n软件开发"
+                                            room = "计算机大楼 302"
+                                            isCourse = true
+                                        }
+                                        col == 3 && row == 2 -> {
+                                            courseName = "数据库原理"
+                                            room = "五教 5202"
+                                            isCourse = true
+                                        }
+                                        col == 4 && row == 2 -> {
+                                            courseName = "嵌入式开发"
+                                            room = "三教 1103"
+                                            isCourse = true
+                                        }
+                                        col == 4 && row == 4 -> {
+                                            courseName = "体育"
+                                            room = "北体育馆"
+                                            isCourse = true
+                                        }
                                     }
                                 }
 
-                                // 为不同课程分配不同颜色，更显真实
                                 val courseColor = when (courseName) {
-                                    "移动应用\n软件开发" -> MaterialTheme.colors.primary.copy(alpha = 0.9f) // 品牌蓝
-                                    "数据库原理" -> Color(0xFF7E57C2).copy(alpha = 0.9f) // 紫色
-                                    "嵌入式开发" -> Color(0xFF26A69A).copy(alpha = 0.9f) // 蓝绿色
-                                    "体育" -> Color(0xFFFFA726).copy(alpha = 0.9f) // 橙色
+                                    "移动应用\n软件开发" -> MaterialTheme.colors.primary.copy(alpha = 0.9f)
+                                    "数据库原理" -> Color(0xFF7E57C2).copy(alpha = 0.9f)
+                                    "嵌入式开发" -> Color(0xFF26A69A).copy(alpha = 0.9f)
+                                    "体育" -> Color(0xFFFFA726).copy(alpha = 0.9f)
                                     else -> Color.Transparent
                                 }
 
-                                // 【重点修改】加高高度：非表头行高度设为 120.dp，完美展示上下滚动
                                 val cellWidth = if (col == 0) 50.dp else 100.dp
                                 val cellHeight = if (row == 0) 40.dp else 120.dp
 
@@ -223,22 +332,22 @@ fun CourseMatrixScreen() {
                                         .size(cellWidth, cellHeight)
                                         .background(
                                             when {
-                                                isHeader -> Color(0xFFF8F9FA) // 表头浅灰
-                                                isCourse -> courseColor       // 有课显示课程颜色
-                                                else -> Color(0xFFFAFAFA)     // 没课显示超浅灰
+                                                isHeader -> Color(0xFFF8F9FA)
+                                                isCourse -> courseColor
+                                                else -> Color(0xFFFAFAFA)
                                             }
                                         )
-                                        .border(0.5.dp, Color(0xFFEEEEEE)) // 网格线
+                                        .border(0.5.dp, Color(0xFFEEEEEE))
                                         .padding(6.dp),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Text(
                                         text = when {
                                             row == 0 && col == 0 -> "时间"
-                                            row == 0 -> days[col] // 顶部星期几
-                                            col == 0 -> "第\n${row}\n节" // 左侧节数
-                                            isCourse -> "$courseName\n\n@$room" // 课程与教室
-                                            else -> "" // 没课直接留白，显得清爽
+                                            row == 0 -> days[col]
+                                            col == 0 -> "第\n$row\n节"
+                                            isCourse -> "$courseName\n\n@$room"
+                                            else -> ""
                                         },
                                         fontSize = if (isHeader) 13.sp else 12.sp,
                                         fontWeight = if (isHeader || isCourse) FontWeight.Bold else FontWeight.Normal,
@@ -256,20 +365,28 @@ fun CourseMatrixScreen() {
     }
 }
 
-// ---------- 3. DDL追踪 (原 TodoList 演示) ----------
 @Composable
-fun DDLTrackerScreen() {
-    var assignments by remember { mutableStateOf(listOf(
-        Task(1, "【周三前】提交Android大作业代码", false),
-        Task(2, "【本周末】复习六级单词 Unit 1-5", false),
-        Task(3, "【已完成】社团活动策划案撰写", true)
-    )) }
+fun DdlTrackerScreen() {
+    val todoListState = rememberTodoListState(
+        initialTasks = listOf(
+            Task(1, "【周三前】提交 Android 大作业代码", false),
+            Task(2, "【本周末】复习六级单词 Unit 1-5", false),
+            Task(3, "【已完成】社团活动策划案撰写", true)
+        )
+    )
     var text by remember { mutableStateOf("") }
 
     Column(
-        modifier = Modifier.fillMaxSize().padding(16.dp)
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
     ) {
-        Text("DDL 危机化解中心", fontWeight = FontWeight.Bold, fontSize = 20.sp, color = Color(0xFF2C3E50))
+        Text(
+            text = "DDL 危机化解中心",
+            fontWeight = FontWeight.Bold,
+            fontSize = 20.sp,
+            color = Color(0xFF2C3E50)
+        )
         Spacer(modifier = Modifier.height(16.dp))
 
         Card(
@@ -278,14 +395,18 @@ fun DDLTrackerScreen() {
             elevation = 0.dp
         ) {
             Row(
-                modifier = Modifier.fillMaxWidth().padding(12.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 OutlinedTextField(
                     value = text,
                     onValueChange = { text = it },
                     placeholder = { Text("添加新的作业或考试...", fontSize = 14.sp) },
-                    modifier = Modifier.weight(1f).height(50.dp),
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(50.dp),
                     singleLine = true,
                     colors = TextFieldDefaults.outlinedTextFieldColors(
                         backgroundColor = Color(0xFFF9F9F9),
@@ -296,8 +417,7 @@ fun DDLTrackerScreen() {
                 Spacer(modifier = Modifier.width(12.dp))
                 Button(
                     onClick = {
-                        if (text.isNotBlank()) {
-                            assignments = listOf(Task(assignments.size + 1, text, false)) + assignments
+                        if (todoListState.addTask(text)) {
                             text = ""
                         }
                     },
@@ -312,30 +432,42 @@ fun DDLTrackerScreen() {
         Spacer(modifier = Modifier.height(16.dp))
 
         LazyColumn(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-            items(assignments) { task ->
+            items(todoListState.tasks, key = { it.id }) { task ->
                 TaskItem(
                     task = task,
-                    onCheckboxChange = { isChecked ->
-                        assignments = assignments.map { if (it.id == task.id) it.copy(isCompleted = isChecked) else it }
+                    onCheckboxChange = { checked ->
+                        todoListState.toggleTask(task.id, checked)
                     },
-                    onDelete = { assignments = assignments.filter { it.id != task.id } }
+                    onDelete = {
+                        todoListState.deleteTask(task.id)
+                    }
                 )
             }
         }
     }
 }
 
-data class Task(val id: Int, val title: String, val isCompleted: Boolean)
+data class Task(
+    val id: Int,
+    val title: String,
+    val isCompleted: Boolean
+)
 
 @Composable
-fun TaskItem(task: Task, onCheckboxChange: (Boolean) -> Unit, onDelete: () -> Unit) {
+fun TaskItem(
+    task: Task,
+    onCheckboxChange: (Boolean) -> Unit,
+    onDelete: () -> Unit
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         elevation = 0.dp,
         shape = MaterialTheme.shapes.medium
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 16.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Checkbox(
@@ -353,20 +485,24 @@ fun TaskItem(task: Task, onCheckboxChange: (Boolean) -> Unit, onDelete: () -> Un
                 overflow = TextOverflow.Ellipsis
             )
             IconButton(onClick = onDelete, modifier = Modifier.size(24.dp)) {
-                Icon(Icons.Default.Delete, contentDescription = "删除", tint = Color(0xFFFF8A65))
+                Icon(
+                    imageVector = Icons.Default.Delete,
+                    contentDescription = "删除",
+                    tint = Color(0xFFFF8A65)
+                )
             }
         }
     }
 }
 
-// ---------- 业务化重构的组件 (保留原有核心 API，修改视觉表现) ----------
-
-// 原 CounterDemo：自习番茄钟
 @Composable
 fun PomodoroCounter() {
     var focusCount by remember { mutableStateOf(0) }
+
     Card(
-        modifier = Modifier.fillMaxWidth().height(120.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(120.dp),
         shape = MaterialTheme.shapes.large,
         elevation = 0.dp
     ) {
@@ -374,53 +510,70 @@ fun PomodoroCounter() {
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.Center
         ) {
-            Text("🍅 今日专注次数", fontSize = 13.sp, color = Color.Gray)
+            Text("今日专注次数", fontSize = 13.sp, color = Color.Gray)
             Spacer(modifier = Modifier.height(8.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("$focusCount", fontWeight = FontWeight.ExtraBold, fontSize = 36.sp, color = Color(0xFFE53935))
+                Text(
+                    text = "$focusCount",
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 36.sp,
+                    color = Color(0xFFE53935)
+                )
                 Text(" 次", fontSize = 14.sp, color = Color.Gray)
                 Spacer(modifier = Modifier.weight(1f))
                 Button(
                     onClick = { focusCount += 1 },
                     contentPadding = PaddingValues(0.dp),
                     modifier = Modifier.size(40.dp),
-                    shape = androidx.compose.foundation.shape.CircleShape,
-                    colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFFFFEBEE), contentColor = Color(0xFFE53935))
+                    shape = CircleShape,
+                    colors = ButtonDefaults.buttonColors(
+                        backgroundColor = Color(0xFFFFEBEE),
+                        contentColor = Color(0xFFE53935)
+                    )
                 ) {
-                    Icon(Icons.Default.Add, contentDescription = "增加打卡", modifier = Modifier.size(24.dp))
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = "增加打卡",
+                        modifier = Modifier.size(24.dp)
+                    )
                 }
             }
         }
     }
 }
 
-// 原 AnimationDemo：动态课程提醒卡片
 @Composable
 fun ExpandableCourseCard() {
     var expanded by remember { mutableStateOf(false) }
 
     val height by animateDpAsState(
         targetValue = if (expanded) 160.dp else 70.dp,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioMediumBouncy, stiffness = Spring.StiffnessLow), label = "height"
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        ),
+        label = "height"
     )
-    // 展开时颜色变为品牌蓝，收起时为纯白
     val backgroundColor by animateColorAsState(
         targetValue = if (expanded) MaterialTheme.colors.primary else Color.White,
-        animationSpec = tween(durationMillis = 300), label = "color"
+        animationSpec = tween(durationMillis = 300),
+        label = "color"
     )
     val contentColor by animateColorAsState(
         targetValue = if (expanded) Color.White else Color.Black,
-        animationSpec = tween(durationMillis = 300), label = "textColor"
+        animationSpec = tween(durationMillis = 300),
+        label = "textColor"
     )
     val cornerRadius by animateDpAsState(
         targetValue = if (expanded) 24.dp else 12.dp,
-        animationSpec = tween(durationMillis = 300), label = "radius"
+        animationSpec = tween(durationMillis = 300),
+        label = "radius"
     )
 
     Card(
         modifier = Modifier.fillMaxWidth(),
         elevation = if (expanded) 6.dp else 0.dp,
-        shape = androidx.compose.foundation.shape.RoundedCornerShape(cornerRadius)
+        shape = RoundedCornerShape(cornerRadius)
     ) {
         Box(
             modifier = Modifier
@@ -432,22 +585,39 @@ fun ExpandableCourseCard() {
         ) {
             Column {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    // 左侧小色块
-                    Box(modifier = Modifier.size(10.dp).clip(androidx.compose.foundation.shape.CircleShape).background(if(expanded) Color.White else Color(0xFF64B5F6)))
+                    Box(
+                        modifier = Modifier
+                            .size(10.dp)
+                            .clip(CircleShape)
+                            .background(if (expanded) Color.White else Color(0xFF64B5F6))
+                    )
                     Spacer(modifier = Modifier.width(12.dp))
-                    Text("14:00 - 15:35 | 移动应用开发", fontWeight = FontWeight.Bold, color = contentColor, fontSize = 16.sp)
+                    Text(
+                        text = "14:00 - 15:35 | 移动应用开发",
+                        fontWeight = FontWeight.Bold,
+                        color = contentColor,
+                        fontSize = 16.sp
+                    )
                 }
 
-                // 仅在展开时显示的内容，带淡入效果
                 AnimatedVisibility(
                     visible = expanded,
                     enter = fadeIn(animationSpec = tween(400)) + expandVertically(),
                     exit = fadeOut(animationSpec = tween(200)) + shrinkVertically()
                 ) {
                     Column(modifier = Modifier.padding(top = 16.dp, start = 22.dp)) {
-                        Text("📍 教室: 计算机大楼 302 机房", color = Color.White.copy(alpha = 0.9f), fontSize = 14.sp)
+                        Text(
+                            text = "教室：计算机大楼 302 机房",
+                            color = Color.White.copy(alpha = 0.9f),
+                            fontSize = 14.sp
+                        )
                         Spacer(modifier = Modifier.height(8.dp))
-                        Text("👨‍🏫 授课教师: 张老师\n📝 备注: 今天小组要进行阶段性项目展示，记得带电脑！", color = Color.White.copy(alpha = 0.7f), fontSize = 13.sp, lineHeight = 20.sp)
+                        Text(
+                            text = "授课教师：张老师\n备注：今天小组要进行阶段性项目展示，记得带电脑。",
+                            color = Color.White.copy(alpha = 0.7f),
+                            fontSize = 13.sp,
+                            lineHeight = 20.sp
+                        )
                     }
                 }
             }
@@ -455,53 +625,79 @@ fun ExpandableCourseCard() {
     }
 }
 
-// 原 ElasticCardDemo：专注悬浮球体验区
 @Composable
 fun InteractiveFocusWidget() {
     var offsetX by remember { mutableStateOf(0f) }
     var offsetY by remember { mutableStateOf(0f) }
     val scope = rememberCoroutineScope()
 
-    // 拖拽幅度大时变色，提醒松手回弹
     val widgetColor by animateColorAsState(
         targetValue = when {
-            kotlin.math.abs(offsetX) > 150f || kotlin.math.abs(offsetY) > 150f -> Color(0xFFFF9800) // 警告橙色
-            else -> Color(0xFF4FC3F7) // 清新蓝
+            kotlin.math.abs(offsetX) > 150f || kotlin.math.abs(offsetY) > 150f -> Color(0xFFFF9800)
+            else -> Color(0xFF4FC3F7)
         },
-        animationSpec = tween(200), label = "widgetColor"
+        animationSpec = tween(200),
+        label = "widgetColor"
     )
 
     Card(
-        modifier = Modifier.fillMaxWidth().height(200.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(200.dp),
         elevation = 0.dp,
         shape = MaterialTheme.shapes.large
     ) {
         Box(
-            modifier = Modifier.fillMaxSize().background(Color(0xFFE1F5FE)).padding(16.dp),
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color(0xFFE1F5FE))
+                .padding(16.dp),
             contentAlignment = Alignment.Center
         ) {
-            Text("拖拽小球任意位置，松开体验阻尼回弹", color = Color.Gray, fontSize = 13.sp, modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 8.dp))
+            Text(
+                text = "拖拽小球任意位置，松开体验阻尼回弹",
+                color = Color.Gray,
+                fontSize = 13.sp,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = 8.dp)
+            )
 
-            // 弹性悬浮球
             Box(
                 modifier = Modifier
                     .size(70.dp)
                     .graphicsLayer {
                         translationX = offsetX
                         translationY = offsetY
-                        rotationZ = (offsetX / 10f).coerceIn(-30f, 30f) // 加上细微的旋转，看起来更有灵性
-                        scaleX = if (kotlin.math.abs(offsetX) > 50f) 0.9f else 1f // 拖拽时稍微被捏扁
+                        rotationZ = (offsetX / 10f).coerceIn(-30f, 30f)
+                        scaleX = if (kotlin.math.abs(offsetX) > 50f) 0.9f else 1f
                         scaleY = if (kotlin.math.abs(offsetX) > 50f) 0.9f else 1f
                     }
                     .pointerInput(Unit) {
                         detectDragGestures(
                             onDragEnd = {
                                 val springSpec = spring<Float>(
-                                    dampingRatio = Spring.DampingRatioMediumBouncy, // 中等弹力
-                                    stiffness = Spring.StiffnessLow // 较低硬度，让动画时间更长、更Q弹
+                                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                                    stiffness = Spring.StiffnessLow
                                 )
-                                scope.launch { animate(initialValue = offsetX, targetValue = 0f, animationSpec = springSpec) { value, _ -> offsetX = value } }
-                                scope.launch { animate(initialValue = offsetY, targetValue = 0f, animationSpec = springSpec) { value, _ -> offsetY = value } }
+                                scope.launch {
+                                    animate(
+                                        initialValue = offsetX,
+                                        targetValue = 0f,
+                                        animationSpec = springSpec
+                                    ) { value, _ ->
+                                        offsetX = value
+                                    }
+                                }
+                                scope.launch {
+                                    animate(
+                                        initialValue = offsetY,
+                                        targetValue = 0f,
+                                        animationSpec = springSpec
+                                    ) { value, _ ->
+                                        offsetY = value
+                                    }
+                                }
                             },
                             onDrag = { change, dragAmount ->
                                 change.consume()
@@ -510,21 +706,25 @@ fun InteractiveFocusWidget() {
                             }
                         )
                     }
-                    .background(widgetColor, shape = androidx.compose.foundation.shape.CircleShape)
-                    .shadow(8.dp, androidx.compose.foundation.shape.CircleShape),
+                    .background(widgetColor, shape = CircleShape)
+                    .shadow(8.dp, CircleShape),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Default.PlayArrow, contentDescription = "开始专注", tint = Color.White, modifier = Modifier.size(32.dp))
+                Icon(
+                    imageVector = Icons.Default.PlayArrow,
+                    contentDescription = "开始专注",
+                    tint = Color.White,
+                    modifier = Modifier.size(32.dp)
+                )
             }
         }
     }
 }
 
-// ---------- 主题配色 (校园清新风) ----------
 private val UniLightPalette = lightColors(
-    primary = Color(0xFF42A5F5),      // 清新蓝
+    primary = Color(0xFF42A5F5),
     primaryVariant = Color(0xFF1E88E5),
-    secondary = Color(0xFF26A69A),    // 治愈绿
+    secondary = Color(0xFF26A69A),
     background = Color(0xFFF4F7FB),
     surface = Color.White,
     onPrimary = Color.White,
@@ -532,18 +732,50 @@ private val UniLightPalette = lightColors(
     onSurface = Color(0xFF2C3E50)
 )
 
+private val UniDarkPalette = darkColors(
+    primary = Color(0xFF90CAF9),
+    primaryVariant = Color(0xFF42A5F5),
+    secondary = Color(0xFF80CBC4),
+    background = Color(0xFF0F1720),
+    surface = Color(0xFF16202A),
+    onPrimary = Color.Black,
+    onBackground = Color.White,
+    onSurface = Color.White
+)
+
 @Composable
-fun UniHubTheme(content: @Composable () -> Unit) {
+fun UniHubTheme(
+    darkTheme: Boolean = isSystemInDarkTheme(),
+    content: @Composable () -> Unit
+) {
     MaterialTheme(
-        colors = UniLightPalette,
+        colors = if (darkTheme) UniDarkPalette else UniLightPalette,
         typography = MaterialTheme.typography,
         shapes = MaterialTheme.shapes,
         content = content
     )
 }
 
-// 预览
-@Preview(showBackground = true, device = Devices.PIXEL_4)
+@Preview(
+    name = "浅色模式",
+    uiMode = Configuration.UI_MODE_NIGHT_NO,
+    showBackground = true,
+    group = "主题测试"
+)
+@Preview(
+    name = "深色模式",
+    uiMode = Configuration.UI_MODE_NIGHT_YES,
+    showBackground = true,
+    group = "主题测试"
+)
+annotation class ThemePreviews
+
+@Preview(name = "Pixel Fold", device = "id:pixel_fold", showBackground = true, group = "设备适配")
+@Preview(name = "平板横屏", device = Devices.NEXUS_10, showBackground = true, group = "设备适配")
+annotation class DevicePreviews
+
+@ThemePreviews
+@DevicePreviews
 @Composable
 fun PreviewApp() {
     UniHubTheme {
