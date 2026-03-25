@@ -93,7 +93,7 @@ sealed class UniTab(val title: String, val icon: ImageVector) {
     object Home : UniTab("今日校园", Icons.Default.Home)
     object Schedule : UniTab("课表矩阵", Icons.Default.DateRange)
     object Ddl : UniTab("DDL 追踪", Icons.Default.Notifications)
-    object Compare : UniTab("性能对比", Icons.Default.Star)
+    object Compare : UniTab("资源广场", Icons.Default.Star)
 }
 
 class MainActivity : ComponentActivity() {
@@ -121,7 +121,7 @@ fun UniHubApp() {
                             UniTab.Home -> "UniHub 校园空间"
                             UniTab.Schedule -> "本学期专属课表"
                             UniTab.Ddl -> "DDL 危机化解中心"
-                            UniTab.Compare -> "列表性能对比"
+                            UniTab.Compare -> "校园资源广场"
                         },
                         fontWeight = FontWeight.Bold
                     )
