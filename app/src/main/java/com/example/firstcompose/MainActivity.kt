@@ -59,7 +59,7 @@ fun UniHubApp() {
         topBar = {
             TopAppBar(
                 title = {
-                    Text("Fake_THU INFO", fontWeight = FontWeight.Bold)
+                    Text("UniHub 校园空间", fontWeight = FontWeight.Bold)
                 },
                 backgroundColor = MaterialTheme.colors.surface,
                 contentColor = MaterialTheme.colors.primary,
@@ -110,7 +110,6 @@ fun HomeScreen() {
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         // 顶部问候语
-
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(16.dp)
@@ -153,8 +152,8 @@ fun HomeScreen() {
 @Composable
 fun CourseMatrixScreen() {
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
-        Text("本学期课表", fontWeight = FontWeight.Bold, fontSize = 20.sp, color = Color(0xFF2C3E50))
-        Text("特性展示：上下滑动查看全天排课，左右滑动查看全周", fontSize = 13.sp, color = Color.Gray, modifier = Modifier.padding(top = 4.dp, bottom = 16.dp))
+        Text("本学期专属课表", fontWeight = FontWeight.Bold, fontSize = 20.sp, color = Color(0xFF2C3E50))
+        Text("👉 特性展示：上下滑动查看全天排课，左右滑动查看全周", fontSize = 13.sp, color = Color.Gray, modifier = Modifier.padding(top = 4.dp, bottom = 16.dp))
 
         Card(
             modifier = Modifier.fillMaxSize().shadow(8.dp, shape = MaterialTheme.shapes.large),
@@ -261,8 +260,8 @@ fun CourseMatrixScreen() {
 @Composable
 fun DDLTrackerScreen() {
     var assignments by remember { mutableStateOf(listOf(
-        Task(1, "【周三前】提交Android作业代码", false),
-        Task(2, "【本周末】复习单词 Unit 1-5", false),
+        Task(1, "【周三前】提交Android大作业代码", false),
+        Task(2, "【本周末】复习六级单词 Unit 1-5", false),
         Task(3, "【已完成】社团活动策划案撰写", true)
     )) }
     var text by remember { mutableStateOf("") }
@@ -270,7 +269,7 @@ fun DDLTrackerScreen() {
     Column(
         modifier = Modifier.fillMaxSize().padding(16.dp)
     ) {
-        Text("DDL ", fontWeight = FontWeight.Bold, fontSize = 20.sp, color = Color(0xFF2C3E50))
+        Text("DDL 危机化解中心", fontWeight = FontWeight.Bold, fontSize = 20.sp, color = Color(0xFF2C3E50))
         Spacer(modifier = Modifier.height(16.dp))
 
         Card(
@@ -436,7 +435,7 @@ fun ExpandableCourseCard() {
                     // 左侧小色块
                     Box(modifier = Modifier.size(10.dp).clip(androidx.compose.foundation.shape.CircleShape).background(if(expanded) Color.White else Color(0xFF64B5F6)))
                     Spacer(modifier = Modifier.width(12.dp))
-                    Text("移动应用软件开发", fontWeight = FontWeight.Bold, color = contentColor, fontSize = 16.sp)
+                    Text("14:00 - 15:35 | 移动应用开发", fontWeight = FontWeight.Bold, color = contentColor, fontSize = 16.sp)
                 }
 
                 // 仅在展开时显示的内容，带淡入效果
@@ -446,9 +445,9 @@ fun ExpandableCourseCard() {
                     exit = fadeOut(animationSpec = tween(200)) + shrinkVertically()
                 ) {
                     Column(modifier = Modifier.padding(top = 16.dp, start = 22.dp)) {
-                        Text("📍 教室:旧经管报告厅", color = Color.White.copy(alpha = 0.9f), fontSize = 14.sp)
+                        Text("📍 教室: 计算机大楼 302 机房", color = Color.White.copy(alpha = 0.9f), fontSize = 14.sp)
                         Spacer(modifier = Modifier.height(8.dp))
-                        Text("👨‍🏫 授课教师: 王老师\n ", color = Color.White.copy(alpha = 0.7f), fontSize = 13.sp, lineHeight = 20.sp)
+                        Text("👨‍🏫 授课教师: 张老师\n📝 备注: 今天小组要进行阶段性项目展示，记得带电脑！", color = Color.White.copy(alpha = 0.7f), fontSize = 13.sp, lineHeight = 20.sp)
                     }
                 }
             }
