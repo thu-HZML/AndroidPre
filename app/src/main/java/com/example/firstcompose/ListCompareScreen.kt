@@ -5,7 +5,6 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -29,7 +28,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.compose.ui.zIndex
 import androidx.compose.ui.unit.dp
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -59,13 +57,6 @@ private class RenderMetrics {
 
 @Composable
 fun ListCompareScreen(onBack: () -> Unit) {
-    val listData = remember {
-        List(10_000) { index -> PerfItem(id = index, title = "列表项 #$index") }
-    }
-    var selectedTab by remember { mutableStateOf(0) }
-    val legacyMetrics = remember { RenderMetrics() }
-    val composeMetrics = remember { RenderMetrics() }
-
     Scaffold(
         topBar = {
             TopAppBar(
@@ -75,51 +66,63 @@ fun ListCompareScreen(onBack: () -> Unit) {
             )
         }
     ) { paddingValues ->
-        Column(
+        ListCompareContent(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-        ) {
-            TabRow(selectedTabIndex = selectedTab) {
-                Tab(
-                    selected = selectedTab == 0,
-                    onClick = { selectedTab = 0 },
-                    text = { Text("RecyclerView（XML）") }
-                )
-                Tab(
-                    selected = selectedTab == 1,
-                    onClick = { selectedTab = 1 },
-                    text = { Text("LazyColumn（Compose）") }
-                )
-            }
+        )
+    }
+}
 
-            if (selectedTab == 0) {
-                MetricsPanel(
-                    title = "传统 RecyclerView",
-                    metrics = legacyMetrics,
-                    disposeLabel = "回收"
-                )
-                LegacyRecyclerList(
-                    items = listData,
-                    metrics = legacyMetrics,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f)
-                )
-            } else {
-                MetricsPanel(
-                    title = "Compose LazyColumn",
-                    metrics = composeMetrics,
-                    disposeLabel = "释放"
-                )
-                ComposeLazyList(
-                    items = listData,
-                    metrics = composeMetrics,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f)
-                )
-            }
+@Composable
+fun ListCompareContent(modifier: Modifier = Modifier) {
+    val listData = remember {
+        List(10_000) { index -> PerfItem(id = index, title = "列表项 #$index") }
+    }
+    var selectedTab by remember { mutableStateOf(0) }
+    val legacyMetrics = remember { RenderMetrics() }
+    val composeMetrics = remember { RenderMetrics() }
+
+    Column(modifier = modifier) {
+        TabRow(selectedTabIndex = selectedTab) {
+            Tab(
+                selected = selectedTab == 0,
+                onClick = { selectedTab = 0 },
+                text = { Text("RecyclerView（XML）") }
+            )
+            Tab(
+                selected = selectedTab == 1,
+                onClick = { selectedTab = 1 },
+                text = { Text("LazyColumn（Compose）") }
+            )
+        }
+
+        if (selectedTab == 0) {
+            MetricsPanel(
+                title = "传统 RecyclerView",
+                metrics = legacyMetrics,
+                disposeLabel = "回收"
+            )
+            LegacyRecyclerList(
+                items = listData,
+                metrics = legacyMetrics,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+            )
+        } else {
+            MetricsPanel(
+                title = "Compose LazyColumn",
+                metrics = composeMetrics,
+                disposeLabel = "释放"
+            )
+            ComposeLazyList(
+                items = listData,
+                metrics = composeMetrics,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+            )
         }
     }
 }
@@ -132,7 +135,6 @@ private fun MetricsPanel(
 ) {
     Card(
         modifier = Modifier
-            .zIndex(1f)
             .fillMaxWidth()
             .padding(12.dp),
         elevation = 4.dp
@@ -158,24 +160,22 @@ private fun LegacyRecyclerList(
     modifier: Modifier = Modifier
 ) {
     val topPaddingPx = with(LocalDensity.current) { 8.dp.roundToPx() }
-    Box(modifier = modifier) {
-        AndroidView(
-            modifier = Modifier.fillMaxSize(),
-            factory = { context ->
-                RecyclerView(context).apply {
-                    layoutManager = LinearLayoutManager(context)
-                    clipToPadding = false
-                    setPadding(0, topPaddingPx, 0, topPaddingPx)
-                    adapter = LegacyAdapter(
-                        items = items,
-                        onCreate = metrics::onCreate,
-                        onBind = metrics::onBind,
-                        onRecycle = metrics::onDispose
-                    )
-                }
+    AndroidView(
+        modifier = modifier.fillMaxSize(),
+        factory = { context ->
+            RecyclerView(context).apply {
+                layoutManager = LinearLayoutManager(context)
+                clipToPadding = false
+                setPadding(0, topPaddingPx, 0, topPaddingPx)
+                adapter = LegacyAdapter(
+                    items = items,
+                    onCreate = metrics::onCreate,
+                    onBind = metrics::onBind,
+                    onRecycle = metrics::onDispose
+                )
             }
-        )
-    }
+        }
+    )
 }
 
 @Composable
