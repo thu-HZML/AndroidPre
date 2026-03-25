@@ -42,6 +42,7 @@ sealed class Screen {
     object Animation : Screen()
     object ElasticCard : Screen()
     object TodoList : Screen()
+    object ListCompare : Screen()
 }
 
 class MainActivity : ComponentActivity() {
@@ -66,6 +67,7 @@ fun Navigation() {
         Screen.Animation -> AnimationScreen(onBack = { currentScreen = Screen.Menu })
         Screen.ElasticCard -> ElasticCardScreen(onBack = { currentScreen = Screen.Menu })
         Screen.TodoList -> TodoListScreen(onBack = { currentScreen = Screen.Menu })
+        Screen.ListCompare -> ListCompareScreen(onBack = { currentScreen = Screen.Menu })
     }
 }
 
@@ -75,7 +77,7 @@ fun MenuScreen(onScreenSelected: (Screen) -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Compose 演示合集") },
+                title = { Text("Compose 功能演示") },
                 backgroundColor = MaterialTheme.colors.primarySurface
             )
         }
@@ -89,28 +91,32 @@ fun MenuScreen(onScreenSelected: (Screen) -> Unit) {
         ) {
             // 计数器演示按钮
             MenuButton(
-                text = "计数器演示 (状态驱动 UI)",
+                text = "计数器演示（状态驱动 UI）",
                 onClick = { onScreenSelected(Screen.Counter) }
             )
             // 二维滚动演示按钮
             MenuButton(
-                text = "二维滚动演示 (上下 + 左右)",
+                text = "二维滚动演示（上下+左右）",
                 onClick = { onScreenSelected(Screen.TwoDScroll) }
             )
             // 动画演示按钮
             MenuButton(
-                text = "复杂动画演示 (高度/颜色变化)",
+                text = "复杂动画演示（高度/颜色变化）",
                 onClick = { onScreenSelected(Screen.Animation) }
             )
             // 弹性卡片演示按钮
             MenuButton(
-                text = "弹性卡片演示 (拖拽 + 回弹)",
+                text = "弹性卡片演示（拖拽+回弹）",
                 onClick = { onScreenSelected(Screen.ElasticCard) }
             )
             // 待办事项演示按钮
             MenuButton(
-                text = "待办事项列表 (增删改)",
+                text = "待办列表演示（增删改）",
                 onClick = { onScreenSelected(Screen.TodoList) }
+            )
+            MenuButton(
+                text = "列表性能对比（XML vs Compose）",
+                onClick = { onScreenSelected(Screen.ListCompare) }
             )
         }
     }
@@ -228,25 +234,12 @@ fun ElasticCardScreen(onBack: () -> Unit) {
 // 待办事项列表演示界面
 @Composable
 fun TodoListScreen(onBack: () -> Unit) {
-    var tasks by remember { mutableStateOf(listOf<Task>()) }
+    val todoListState = rememberTodoListState()
     var text by remember { mutableStateOf("") }
     val onAdd: () -> Unit = {
-        if (text.isNotBlank()) {
-            tasks = tasks + Task(
-                id = (tasks.maxOfOrNull { it.id } ?: 0) + 1,
-                title = text.trim(),
-                isCompleted = false
-            )
+        if (todoListState.addTask(text)) {
             text = ""
         }
-    }
-    val onToggle: (Int, Boolean) -> Unit = { id, checked ->
-        tasks = tasks.map { task ->
-            if (task.id == id) task.copy(isCompleted = checked) else task
-        }
-    }
-    val onDelete: (Int) -> Unit = { id ->
-        tasks = tasks.filter { task -> task.id != id }
     }
 
     Scaffold(
@@ -274,9 +267,9 @@ fun TodoListScreen(onBack: () -> Unit) {
             Spacer(modifier = Modifier.height(16.dp))
 
             TaskList(
-                tasks = tasks,
-                onToggle = onToggle,
-                onDelete = onDelete
+                tasks = todoListState.tasks,
+                onToggle = todoListState::toggleTask,
+                onDelete = todoListState::deleteTask
             )
         }
     }
@@ -338,7 +331,7 @@ fun TaskInputBar(
         TextField(
             value = text,
             onValueChange = onTextChange,
-            label = { Text("New Task") },
+            label = { Text("新任务") },
             modifier = Modifier.weight(1f)
         )
         Spacer(modifier = Modifier.width(8.dp))
@@ -346,9 +339,9 @@ fun TaskInputBar(
             onClick = onAdd,
             enabled = enabled
         ) {
-            Icon(Icons.Default.Add, contentDescription = "Add")
+            Icon(Icons.Default.Add, contentDescription = "添加")
             Spacer(modifier = Modifier.width(4.dp))
-            Text("Add")
+            Text("添加")
         }
     }
 }
