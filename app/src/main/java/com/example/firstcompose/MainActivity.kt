@@ -700,6 +700,7 @@ fun InteractiveFocusWidget() {
                                 }
                             },
                             onDrag = { change, dragAmount ->
+                                change.consume()
                                 offsetX = (offsetX + dragAmount.x).coerceIn(-400f, 400f)
                                 offsetY = (offsetY + dragAmount.y).coerceIn(-400f, 400f)
                             }
