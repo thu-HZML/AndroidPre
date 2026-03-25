@@ -651,21 +651,33 @@ fun MyAppTheme(
     )
 }
 
-// 预览（仅预览菜单界面）
+/**
+ * 1. 主题批量预览：同时包含深色和浅色模式
+ */
 @Preview(
     name = "浅色模式",
     uiMode = Configuration.UI_MODE_NIGHT_NO,
-    device = Devices.PIXEL_4
+    showBackground = true,
+    group = "主题测试"
 )
 @Preview(
     name = "深色模式",
     uiMode = Configuration.UI_MODE_NIGHT_YES,
-    device = Devices.PIXEL_4
+    showBackground = true,
+    group = "主题测试"
 )
-@Preview(
-    name = "平板横屏",
-    device = Devices.NEXUS_10
-)
+annotation class ThemePreviews
+
+/**
+ * 2. 设备批量预览：包含常见手机、折叠屏和平板
+ */
+@Preview(name = "Pixel Fold", device = "id:pixel_fold", showBackground = true, group = "设备适配")
+@Preview(name = "平板横屏", device = Devices.NEXUS_10, showBackground = true, group = "设备适配")
+annotation class DevicePreviews
+
+
+@ThemePreviews
+@DevicePreviews
 @Composable
 fun PreviewMenu() {
     MyAppTheme {
