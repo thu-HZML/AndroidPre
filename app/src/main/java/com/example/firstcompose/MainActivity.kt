@@ -133,7 +133,7 @@ fun UniHubApp() {
         },
         bottomBar = {
             BottomNavigation(
-                backgroundColor = MaterialTheme.colors.surface,
+                backgroundColor = MaterialTheme.colors.primary,
                 elevation = 16.dp
             ) {
                 tabs.forEach { tab ->
@@ -153,7 +153,7 @@ fun UniHubApp() {
             modifier = Modifier
                 .padding(paddingValues)
                 .fillMaxSize()
-                .background(Color(0xFFF4F7FB))
+                .background(MaterialTheme.colors.background)
         ) {
             when (currentTab) {
                 UniTab.Home -> HomeScreen()
@@ -212,7 +212,7 @@ fun HomeScreen() {
                         modifier = Modifier.size(32.dp)
                     )
                     Spacer(modifier = Modifier.height(8.dp))
-                    Text("本周超越了", fontSize = 12.sp, color = Color.Gray)
+                    Text("本周超越了", fontSize = 12.sp, color = MaterialTheme.colors.onBackground.copy(alpha = 0.6f))
                     Text(
                         "85% 同学",
                         fontWeight = FontWeight.ExtraBold,
@@ -227,7 +227,7 @@ fun HomeScreen() {
             text = "提醒：下一节课",
             fontWeight = FontWeight.Bold,
             fontSize = 16.sp,
-            color = Color.DarkGray,
+            color = MaterialTheme.colors.onBackground.copy(alpha = 0.6f),
             modifier = Modifier.padding(top = 8.dp)
         )
         ExpandableCourseCard()
@@ -236,7 +236,7 @@ fun HomeScreen() {
             text = "专注悬浮球（互动体验）",
             fontWeight = FontWeight.Bold,
             fontSize = 16.sp,
-            color = Color.DarkGray,
+            color = MaterialTheme.colors.onBackground.copy(alpha = 0.6f),
             modifier = Modifier.padding(top = 8.dp)
         )
         InteractiveFocusWidget()
@@ -259,7 +259,7 @@ fun CourseMatrixScreen() {
         Text(
             text = "上下滑动查看全天排课，左右滑动查看全周",
             fontSize = 13.sp,
-            color = Color.Gray,
+            color = MaterialTheme.colors.onBackground.copy(alpha = 0.6f),
             modifier = Modifier.padding(top = 4.dp, bottom = 16.dp)
         )
 
@@ -351,7 +351,7 @@ fun CourseMatrixScreen() {
                                         },
                                         fontSize = if (isHeader) 13.sp else 12.sp,
                                         fontWeight = if (isHeader || isCourse) FontWeight.Bold else FontWeight.Normal,
-                                        color = if (isHeader) Color.DarkGray else if (isCourse) Color.White else Color.Transparent,
+                                        color = if (isHeader) MaterialTheme.colors.onBackground.copy(alpha = 0.6f) else if (isCourse) Color.White else Color.Transparent,
                                         textAlign = TextAlign.Center,
                                         lineHeight = 18.sp
                                     )
@@ -510,7 +510,7 @@ fun PomodoroCounter() {
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.Center
         ) {
-            Text("今日专注次数", fontSize = 13.sp, color = Color.Gray)
+            Text("今日专注次数", fontSize = 13.sp, color = MaterialTheme.colors.onBackground.copy(alpha = 0.6f))
             Spacer(modifier = Modifier.height(8.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
@@ -519,7 +519,7 @@ fun PomodoroCounter() {
                     fontSize = 36.sp,
                     color = Color(0xFFE53935)
                 )
-                Text(" 次", fontSize = 14.sp, color = Color.Gray)
+                Text(" 次", fontSize = 14.sp, color = MaterialTheme.colors.onBackground.copy(alpha = 0.6f))
                 Spacer(modifier = Modifier.weight(1f))
                 Button(
                     onClick = { focusCount += 1 },
@@ -527,8 +527,8 @@ fun PomodoroCounter() {
                     modifier = Modifier.size(40.dp),
                     shape = CircleShape,
                     colors = ButtonDefaults.buttonColors(
-                        backgroundColor = Color(0xFFFFEBEE),
-                        contentColor = Color(0xFFE53935)
+                        backgroundColor = MaterialTheme.colors.primary.copy(alpha = 0.1f),
+                        contentColor = MaterialTheme.colors.primary
                     )
                 ) {
                     Icon(
@@ -555,12 +555,12 @@ fun ExpandableCourseCard() {
         label = "height"
     )
     val backgroundColor by animateColorAsState(
-        targetValue = if (expanded) MaterialTheme.colors.primary else Color.White,
+        targetValue = if (expanded) MaterialTheme.colors.primary else MaterialTheme.colors.surface,
         animationSpec = tween(durationMillis = 300),
         label = "color"
     )
     val contentColor by animateColorAsState(
-        targetValue = if (expanded) Color.White else Color.Black,
+        targetValue = if (expanded) MaterialTheme.colors.onPrimary else MaterialTheme.colors.onSurface,
         animationSpec = tween(durationMillis = 300),
         label = "textColor"
     )
@@ -589,7 +589,7 @@ fun ExpandableCourseCard() {
                         modifier = Modifier
                             .size(10.dp)
                             .clip(CircleShape)
-                            .background(if (expanded) Color.White else Color(0xFF64B5F6))
+                            .background(if (expanded) MaterialTheme.colors.onPrimary else MaterialTheme.colors.primary)
                     )
                     Spacer(modifier = Modifier.width(12.dp))
                     Text(
@@ -608,13 +608,13 @@ fun ExpandableCourseCard() {
                     Column(modifier = Modifier.padding(top = 16.dp, start = 22.dp)) {
                         Text(
                             text = "教室：计算机大楼 302 机房",
-                            color = Color.White.copy(alpha = 0.9f),
+                            color = MaterialTheme.colors.onPrimary.copy(alpha = 0.9f),
                             fontSize = 14.sp
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
                             text = "授课教师：张老师\n备注：今天小组要进行阶段性项目展示，记得带电脑。",
-                            color = Color.White.copy(alpha = 0.7f),
+                            color = MaterialTheme.colors.onPrimary.copy(alpha = 0.7f),
                             fontSize = 13.sp,
                             lineHeight = 20.sp
                         )
@@ -650,13 +650,13 @@ fun InteractiveFocusWidget() {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color(0xFFE1F5FE))
+                .background(MaterialTheme.colors.primary.copy(alpha = 0.05f))
                 .padding(16.dp),
             contentAlignment = Alignment.Center
         ) {
             Text(
                 text = "拖拽小球任意位置，松开体验阻尼回弹",
-                color = Color.Gray,
+                color = MaterialTheme.colors.onBackground.copy(alpha = 0.6f),
                 fontSize = 13.sp,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
